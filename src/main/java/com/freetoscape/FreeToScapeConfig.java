@@ -12,7 +12,7 @@ public interface FreeToScapeConfig extends Config {
     default int botwId() { return 0; }
     @ConfigItem(keyName="feedUrl", name="Clan feed URL", description="HTTPS URL ending /v1/feed; loopback HTTP permitted for local development", position=3)
     default String feedUrl() { return ""; }
-    @ConfigItem(keyName="broadcasts", name="New bounty broadcasts", description="Show only: a new bounty has been posted", position=4)
+    @ConfigItem(keyName="broadcasts", name="New bounty broadcasts", description="Show [Clan Broadcast] in red, followed by: A new bounty has been posted!", position=4)
     default boolean broadcasts() { return true; }
     @ConfigItem(keyName="showBountyPassword", name="Show bounty password", description="Display the currently posted regular bounty password on screen until it expires", position=5)
     default boolean showBountyPassword() { return false; }

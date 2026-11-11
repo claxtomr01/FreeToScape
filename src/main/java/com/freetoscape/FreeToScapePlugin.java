@@ -316,7 +316,7 @@ public class FreeToScapePlugin extends Plugin {
             // Consume while logged out/disabled; never flood chat with missed history.
             if (config.broadcasts() && !notices.isEmpty()) clientThread.invokeLater(() -> {
                 if (session == token && client.getGameState() == GameState.LOGGED_IN && config.broadcasts())
-                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "a new bounty has been posted", "");
+                    client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "<col=ff0000>[Clan Broadcast]</col> A new bounty has been posted!", "");
             });
         } catch (Exception e) {
             if (session != token) return;

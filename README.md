@@ -6,7 +6,7 @@ A RuneLite sidebar for FreeToScape clan events, Wise Old Man standings and Slaug
 - SOTW: Skill of the Week XP standings.
 - BOTW: Boss of the Week kill-count standings.
 - Slaughterhouse: team totals from a separately operated clan feed.
-- Bounty notices: a local game-chat message saying only `a new bounty has been posted`.
+- Bounty notices: a local game-chat message saying `[Clan Broadcast] A new bounty has been posted!`, with the `[Clan Broadcast]` prefix in red.
 - Optional bounty-password overlay, off by default, when the configured feed supplies the current event code.
 - Optional officer activity reporter, off by default, for approved account links and Discord rank-sync dry runs.
 
