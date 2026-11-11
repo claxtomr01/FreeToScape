@@ -3,7 +3,6 @@ package com.freetoscape;
 import com.google.gson.*;
 import com.google.inject.Provides;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
@@ -19,6 +18,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.*;
 import net.runelite.client.ui.*;
 import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.ImageUtil;
 import okhttp3.*;
 
 @PluginDescriptor(name="FreeToScape", description="Clan competitions and Slaughterhouse bounty notices")
@@ -79,6 +79,9 @@ public class FreeToScapePlugin extends Plugin {
         PluginPanel panel = new PluginPanel() {};
         panel.setLayout(new BorderLayout(0, 8));
         JLabel title = new JLabel("FreeToScape", SwingConstants.CENTER);
+        title.setIcon(new ImageIcon(ImageUtil.loadImageResource(FreeToScapePlugin.class, "logo.png")));
+        title.setHorizontalTextPosition(SwingConstants.CENTER);
+        title.setVerticalTextPosition(SwingConstants.BOTTOM);
         title.setForeground(new Color(218, 182, 97));
         panel.add(title, BorderLayout.NORTH);
         JTabbedPane tabs = new JTabbedPane();
@@ -132,11 +135,9 @@ public class FreeToScapePlugin extends Plugin {
             worker.execute(() -> refresh(token, true));
         });
         links.add(refreshButton); links.add(wom); links.add(discord); panel.add(links, BorderLayout.SOUTH);
-        BufferedImage icon = new BufferedImage(24, 24, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = icon.createGraphics();
-        g.setColor(new Color(66, 188, 170)); g.fillRoundRect(1, 1, 22, 22, 6, 6);
-        g.setColor(Color.BLACK); g.drawString("F", 8, 17); g.dispose();
-        navigation = NavigationButton.builder().tooltip("FreeToScape").icon(icon).panel(panel).priority(7).build();
+        navigation = NavigationButton.builder().tooltip("FreeToScape")
+            .icon(ImageUtil.loadImageResource(FreeToScapePlugin.class, "icon.png"))
+            .panel(panel).priority(7).build();
         toolbar.addNavigation(navigation);
         worker = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "freetoscape-refresh"); t.setDaemon(true); return t;
