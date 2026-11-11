@@ -1,2 +1,2 @@
 # FreeToScape
-FreToScape
+FreTooScape
