@@ -32,6 +32,7 @@ public class FreeToScapePlugin extends Plugin {
     @Inject private net.runelite.client.ui.overlay.OverlayManager overlayManager;
     @Inject private BountyPasswordOverlay passwordOverlay;
     @Inject private ClanActivityReporter activityReporter;
+    @Inject private ConfigManager configManager;
     private ScheduledExecutorService worker;
     private NavigationButton navigation;
     private JTextArea home, slaughterhouse, eventOverview;
@@ -118,8 +119,25 @@ public class FreeToScapePlugin extends Plugin {
         JTextArea privacy = page(tabs, "Privacy");
         privacy.setText("FreeToScape is an unofficial clan plugin. It is not provided, supported or moderated by Jagex.\n\nThe plugin reads public Wise Old Man competitions and your configured clan feed. These services can see your connecting IP address.\n\nPublic leaderboard names and scores are held temporarily to display standings. No player names, account credentials, chat history or IP addresses are written to files by this plugin.\n\nThe plugin saves only its settings through RuneLite. Requests disable disk caching and cookies. It has no analytics. Optional activity reporting remains off unless an authorised officer enables it.\n\nRuneLite itself, Wise Old Man, Discord, the existing bot and any feed host have separate data practices.\n\nBounty passwords are event codes, never RuneScape account passwords. Never put account credentials into plugin settings.");
         privacy.append("\n\nOptional officer activity reporting is off by default. If enabled, it uploads only officer-linked RuneScape names, clan ranks and observed clan-channel presence to the configured bot. The bot retains activity for seven days; account links remain until an officer unlinks them. No worlds, locations or game chat are sent. The earlier no-upload description applies while this option is disabled.");
-        activityStatus = page(tabs, "Clan activity");
-        activityStatus.setText("Activity reporting disabled.\n\nOfficer-approved account links are required. If enabled, the bot stores 7 days of observed activity. This is not proof of global online/offline status.");
+        activityStatus = new JTextArea(18, 19);
+        activityStatus.setEditable(false);
+        activityStatus.setLineWrap(true); activityStatus.setWrapStyleWord(true);
+        activityStatus.setMargin(new Insets(10, 8, 10, 8));
+        activityStatus.setText(activityReporter.status());
+        JPanel activityPanel = new JPanel(new BorderLayout(0, 6));
+        activityPanel.add(new JScrollPane(activityStatus), BorderLayout.CENTER);
+        JPanel officerButtons = new JPanel(new GridLayout(0, 1, 0, 4));
+        JButton setup = new JButton("Officer setup");
+        setup.addActionListener(e -> officerSetup(panel));
+        JButton forget = new JButton("Forget session credential");
+        forget.addActionListener(e -> {
+            activityReporter.forgetCredential();
+            activityStatus.setText(activityReporter.status());
+        });
+        officerButtons.add(setup); officerButtons.add(forget);
+        activityPanel.add(officerButtons, BorderLayout.SOUTH);
+        tabs.addTab("Clan activity", activityPanel);
+        privacy.append("\n\nOfficer setup accepts a dedicated reporter credential in a masked field. It is held only in process memory, bound to the selected receiver, and cleared on plugin shutdown or Forget session credential. It is not saved in RuneLite configuration. Changing receiver requires setting up its credential again. The officer launcher remains an optional environment-variable fallback.");
         panel.add(tabs, BorderLayout.CENTER);
         JPanel links = new JPanel(new GridLayout(0, 1, 0, 4));
         JButton wom = new JButton("Wise Old Man");
@@ -153,6 +171,36 @@ public class FreeToScapePlugin extends Plugin {
         area.setMargin(new Insets(6, 8, 6, 8));
         area.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(80, 80, 80)));
         return area;
+    }
+
+    private void officerSetup(Component parent) {
+        JTextField server = new JTextField(config.clanSyncUrl().isBlank()
+            ? "http://127.0.0.1:8788" : config.clanSyncUrl(), 22);
+        JPasswordField secret = new JPasswordField(22);
+        JPanel form = new JPanel(new BorderLayout(0, 12));
+        JLabel guide = new JLabel("<html><body style='width: 310px'>Authorised officers only. When reporting is enabled, linked RuneScape names, ranks below Warden and observed clan-channel presence are sent to this bot.<br><br>The bot retains activity for 7 days. Use HTTPS for a remote bot; localhost works only on the bot PC.<br><br>Use the dedicated reporter credential from your bot operator. It lasts until the plugin closes. Enable activity reporting separately in FreeToScape settings.</body></html>");
+        form.add(guide, BorderLayout.NORTH);
+        JPanel fields = new JPanel(new GridLayout(0, 1, 0, 6));
+        fields.add(new JLabel("Clan sync server URL")); fields.add(server);
+        fields.add(new JLabel("Reporter credential (this session only)")); fields.add(secret);
+        form.add(fields, BorderLayout.CENTER);
+        int choice = JOptionPane.showOptionDialog(parent, form, "FreeToScape officer setup",
+            JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+            new String[]{"Use for this session", "Cancel"}, "Use for this session");
+        char[] entered = secret.getPassword();
+        try {
+            if (choice != 0) return;
+            String address = ReporterCredential.serverAddress(server.getText());
+            activityReporter.useCredential(address, entered);
+            configManager.setConfiguration("freetoscape", "clanSyncUrl", address);
+            activityStatus.setText(activityReporter.status());
+        } catch (IllegalArgumentException error) {
+            JOptionPane.showMessageDialog(parent, "Check the server URL (HTTPS or local loopback HTTP) and the dedicated 32–256 character reporter credential.",
+                "Officer setup incomplete", JOptionPane.WARNING_MESSAGE);
+        } finally {
+            Arrays.fill(entered, '\0');
+            secret.setText("");
+        }
     }
 
     private JTextArea pageWithStatus(JTabbedPane tabs, String name, JTextArea status) {

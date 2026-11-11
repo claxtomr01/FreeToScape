@@ -28,7 +28,15 @@ Automatic rank sync excludes **Warden and every higher in-game rank**. The repor
 
 The companion bot retains activity for seven days and account links until an officer unlinks them. Discord IDs remain on the bot and are not needed by the game plugin. Server access/logging/backups and retention are the operator's responsibility. This optional feature processes account identifiers; it must not be described as storing no personal data across the whole system.
 
-The reporter uses a dedicated `CLAN_SYNC_REPORTER_TOKEN` environment variable of at least 32 characters, supplied to the RuneLite process by the authorised operator, plus the configured clan-sync base URL. Never put the bot token, Google credentials or reporter token in this repository or in a feed URL. The ordinary client does not inherit credentials from a development launcher. Use only a trusted receiver and keep reporting disabled on ordinary members' clients.
+## Officer setup
+
+Once the plugin is installed in normal RuneLite, officers can open **Clan activity → Officer setup**, enter the clan-sync server base URL and paste the dedicated reporter credential into the masked field. Choose **Use for this session**, then separately enable **Officer clan activity reporting** in FreeToScape settings. This does not require the development/officer launcher. The plugin still needs Plugin Hub acceptance before normal-client installation is available.
+
+The receiver is `http://127.0.0.1:8788` when the bot runs on the same PC. For another PC, the operator must supply an HTTPS-hosted receiver. Hosting has not been provisioned. The credential is the bot operator's dedicated `CLAN_SYNC_REPORTER_TOKEN`, not a Discord bot token, Google credential or Jagex password. It is 32–256 printable characters without spaces. The setup screen saves only the server address in RuneLite settings.
+
+The credential stays in process memory, bound to the selected receiver, until the plugin closes or **Forget session credential** is used. Re-enter it after restarting; there is no persistent credential store in this first version. Changing receiver requires its credential again. Replacing or forgetting it cancels pending reporting work. The legacy launcher/environment variable remains an optional fallback, imported once and bound to the configured receiver; forgetting the credential suppresses that fallback for the rest of the process.
+
+The Clan activity tab shows the receiver address, credential readiness and reporting status. Activity is sent to that bot, which stores it in `clan_activity.sqlite3`; it is not automatically posted to Discord. Officers can use `!clanactivity DISCORD_USER_ID` and `!clanrankpreview` in the bot's private bot-testing channel. Keep reporting disabled on ordinary members' clients. Never put credentials in feed URLs, saved RuneLite settings, GitHub or chat.
 
 ## Development
 
@@ -43,7 +51,7 @@ The development launcher enables Java assertions. Source targets Java 11. The Pl
 
 ## Release status
 
-Prepared for Plugin Hub submission; not yet submitted, approved or published. Publication requires a public source repository, a pinned commit, the official Hub CI checks and maintainer review. Logged-in broadcasts, password delivery and actual linked-account rank reporting still need the paused live test to be completed. The currently installed clan feed does not yet supply passwords. Live Discord role assignment remains a separate operator decision.
+Source is public; the plugin has not yet been accepted or published through Plugin Hub. Publication requires a pinned commit, the official Hub CI checks and maintainer review. Live checks verified events, team scores, synthetic chat notices/code display and one actual linked account's presence/rank upload. The new masked setup flow still needs an interactive check after restart. The currently installed clan feed does not yet supply passwords. A mapped non-staff rank preview and actual Discord-to-feed bounty delivery remain separate checks. Live Discord role assignment remains disabled and is a separate operator decision.
 
 This plugin is unofficial and is not provided, supported or moderated by Jagex. Other installed plugins and external services have their own data practices.
 

@@ -17,16 +17,48 @@ final class ClanActivityReporter {
     @Inject private FreeToScapeConfig config;
     @Inject private OkHttpClient http;
     @Inject private Gson gson;
+    @Inject private ReporterCredential credential;
     private volatile String status = "Activity reporting disabled.";
     private volatile boolean stopped = true;
     private volatile Call activeCall;
     private String collector;
-    private long lastAttempt;
+    private volatile long lastAttempt;
     private volatile long generation;
 
     void start() { generation++; collector = UUID.randomUUID().toString(); stopped = false; lastAttempt = 0; }
-    void stop() { generation++; stopped = true; if (activeCall != null) activeCall.cancel(); status = "Activity reporting disabled."; }
-    String status() { return status; }
+    void stop() { generation++; stopped = true; if (activeCall != null) activeCall.cancel(); credential.clear(); status = "Activity reporting disabled."; }
+    String status() {
+        String destination;
+        boolean ready = false;
+        try {
+            destination = ReporterCredential.serverAddress(config.clanSyncUrl());
+            ready = credential.configuredFor(destination);
+        }
+        catch (IllegalArgumentException error) { destination = "Not configured; open Officer setup."; }
+        return status + "\n\nActivity destination:\n" + destination
+            + "\nCredential: " + (ready ? "ready for this session" : "setup required")
+            + "\n\nYour bot stores 7 days of observed activity. View it with !clanactivity DISCORD_USER_ID in the private bot-testing channel."
+            + "\n\nWarden and higher ranks are excluded from rank sync. Channel absence does not prove globally offline."
+            + "\n\nSetup credentials are kept only for this plugin session.";
+    }
+
+    void useCredential(String address, char[] value) {
+        credential.use(address, value);
+        credentialChanged();
+        status = "Credential ready for this session. Uploads run only while Officer clan activity reporting is enabled in FreeToScape settings.";
+    }
+
+    void forgetCredential() {
+        credential.clear();
+        credentialChanged();
+        status = "Session credential forgotten. Activity uploads require setup again.";
+    }
+
+    private void credentialChanged() {
+        generation++;
+        if (activeCall != null) activeCall.cancel();
+        lastAttempt = 0;
+    }
 
     void poll() {
         if (stopped) return;
@@ -34,12 +66,12 @@ final class ClanActivityReporter {
         if (System.currentTimeMillis() - lastAttempt < 60_000) return;
         lastAttempt = System.currentTimeMillis();
         long token = generation;
-        String secret = System.getenv("CLAN_SYNC_REPORTER_TOKEN");
-        if (secret == null || secret.length() < 32) { status = "Reporter credential missing. Use the officer-only reporter launcher."; return; }
-        String base = config.clanSyncUrl().trim().replaceAll("/+$", "");
         try {
-            FreeToScapePlugin.validateFeedUrl(base);
-            JsonObject links = request(base + "/v1/clan/links", secret, null);
+            String base = ReporterCredential.serverAddress(config.clanSyncUrl());
+            credential.importEnvironment(base, System.getenv("CLAN_SYNC_REPORTER_TOKEN"));
+            String secret = credential.forServer(base);
+            if (secret == null) { status = "Reporter credential missing for this server. Open Clan activity → Officer setup."; return; }
+            JsonObject links = request(base + "/v1/clan/links", secret, null, token);
             if (stopped || token != generation || !config.clanActivityReporting()) return;
             JsonArray approved = links.getAsJsonArray("members");
             if (approved.size() > 500) throw new IOException("Too many linked members");
@@ -52,7 +84,8 @@ final class ClanActivityReporter {
             });
             JsonObject snapshot = pending.get(5, TimeUnit.SECONDS);
             if (stopped || token != generation || !config.clanActivityReporting()) return;
-            JsonObject result = request(base + "/v1/clan/snapshot", secret, snapshot);
+            if (!base.equals(ReporterCredential.serverAddress(config.clanSyncUrl()))) return;
+            JsonObject result = request(base + "/v1/clan/snapshot", secret, snapshot, token);
             if (stopped || token != generation) return;
             status = "Reporter connected\nLinked accounts processed: " + result.get("accepted").getAsInt()
                 + "\nRole sync mode: " + result.get("mode").getAsString()
@@ -62,13 +95,13 @@ final class ClanActivityReporter {
         } finally { activeCall = null; }
     }
 
-    private JsonObject request(String url, String secret, JsonObject payload) throws IOException {
+    private JsonObject request(String url, String secret, JsonObject payload, long token) throws IOException {
         Request.Builder builder = new Request.Builder().url(url).header("Authorization", "Bearer " + secret)
             .header("Cache-Control", "no-store").header("User-Agent", "FreeToScape-RuneLite");
         if (payload != null) builder.post(RequestBody.create(MediaType.parse("application/json"), payload.toString()));
         Call call = FreeToScapePlugin.privateHttpClient(http).newCall(builder.build());
         activeCall = call;
-        if (stopped) { call.cancel(); throw new IOException("Reporter stopped"); }
+        if (stopped || token != generation) { call.cancel(); throw new IOException("Reporter stopped or credential changed"); }
         try (Response response = call.execute()) {
             if (!response.isSuccessful() || response.body() == null) throw new IOException("Reporter request rejected");
             byte[] bytes = response.body().byteStream().readNBytes(65537);
