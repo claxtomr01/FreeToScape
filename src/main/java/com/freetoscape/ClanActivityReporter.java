@@ -79,6 +79,17 @@ final class ClanActivityReporter {
 
     static String clanKey(String value) { return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", ""); }
 
+    static int wardenCutoff(ClanSettings settings) {
+        // Titles are clan-configurable: use Warden's actual numeric position,
+        // rather than guessing which names or built-in ranks are above it.
+        for (int value = 0; value <= ClanRank.JMOD.getRank(); value++) {
+            ClanTitle title = settings.titleForRank(new ClanRank(value));
+            if (title != null && clanKey(title.getName()).equals("warden")) return value;
+        }
+        // An unavailable boundary must never allow an automatic rank change.
+        return -1;
+    }
+
     static JsonObject capture(Client client, JsonArray approved, String expectedClan, String collector) {
         JsonObject result = new JsonObject();
         result.addProperty("clan", expectedClan); result.addProperty("collector", collector);
@@ -90,6 +101,7 @@ final class ClanActivityReporter {
             && clanKey(channel.getName()).equals(clanKey(expectedClan));
         result.addProperty("available", available);
         if (!available) return result;
+        int cutoff = wardenCutoff(settings);
         for (JsonElement element : approved) {
             String name = element.getAsString();
             if (!name.replace('\u00a0',' ').matches("[A-Za-z0-9 _]{1,12}")) continue;
@@ -99,7 +111,9 @@ final class ClanActivityReporter {
                 member.add("present", JsonNull.INSTANCE); member.add("rank", JsonNull.INSTANCE);
             } else {
                 member.addProperty("present", channel.findMember(name) != null);
-                ClanTitle title = settings.titleForRank(rosterMember.getRank());
+                ClanRank rank = rosterMember.getRank();
+                ClanTitle title = rank != null && rank.getRank() >= 0 && rank.getRank() < cutoff
+                    ? settings.titleForRank(rank) : null;
                 if (title == null) member.add("rank", JsonNull.INSTANCE); else member.addProperty("rank", title.getName());
             }
             members.add(member);

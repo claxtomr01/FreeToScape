@@ -11,14 +11,21 @@ public class ClanActivityReporterTest {
         return (T) Proxy.newProxyInstance(type.getClassLoader(),new Class<?>[]{type},(object,method,args)->call.apply(method.getName(),args));
     }
     private Client client(GameState state, String clan) {
+        return client(state, clan, 10, "Topaz", true);
+    }
+    private Client client(GameState state, String clan, int rank, String title, boolean hasWarden) {
         ClanMember member=proxy(ClanMember.class,(method,args)-> {
-            if (method.equals("getRank")) return new ClanRank(10);
+            if (method.equals("getRank")) return new ClanRank(rank);
             throw new AssertionError("Unexpected member data read: "+method);
         });
         ClanSettings settings=proxy(ClanSettings.class,(method,args)-> {
             if (method.equals("getName")) return clan;
             if (method.equals("findMember")) return args[0].equals("Alice")?member:null;
-            if (method.equals("titleForRank")) return new ClanTitle(1,"Topaz");
+            if (method.equals("titleForRank")) {
+                int value = ((ClanRank)args[0]).getRank();
+                if (hasWarden && value == 100) return new ClanTitle(2, "Warden");
+                return value == rank ? new ClanTitle(1, title) : null;
+            }
             throw new AssertionError("Unexpected roster data read: "+method);
         });
         ClanChannelMember online=proxy(ClanChannelMember.class,(method,args)-> {throw new AssertionError("World or extra online data must not be read");});
@@ -55,5 +62,26 @@ public class ClanActivityReporterTest {
     }
     @Test public void activityUploadsAreOffByDefault() {
         assertFalse(new FreeToScapeConfig(){}.clanActivityReporting());
+    }
+    @Test public void wardenAndAllHigherRanksAreWithheldButPresenceRemains() {
+        JsonArray names = new JsonArray(); names.add("Alice");
+        for (int rank : new int[]{100, 110, 125, 126, 127}) {
+            JsonObject data = ClanActivityReporter.capture(client(GameState.LOGGED_IN,"FreeToScape",rank,"Custom staff title",true),names,"FreeToScape","collector-1234567890");
+            JsonObject member = data.getAsJsonArray("members").get(0).getAsJsonObject();
+            assertTrue(member.get("present").getAsBoolean());
+            assertTrue("Excluded rank " + rank, member.get("rank").isJsonNull());
+        }
+    }
+    @Test public void rankImmediatelyBelowWardenRemainsEligible() {
+        JsonArray names = new JsonArray(); names.add("Alice");
+        JsonObject data = ClanActivityReporter.capture(client(GameState.LOGGED_IN,"FreeToScape",99,"Veteran",true),names,"FreeToScape","collector-1234567890");
+        assertEquals("Veteran",data.getAsJsonArray("members").get(0).getAsJsonObject().get("rank").getAsString());
+    }
+    @Test public void missingWardenBoundaryWithholdsRankInsteadOfGuessing() {
+        JsonArray names = new JsonArray(); names.add("Alice");
+        JsonObject data = ClanActivityReporter.capture(client(GameState.LOGGED_IN,"FreeToScape",10,"Topaz",false),names,"FreeToScape","collector-1234567890");
+        JsonObject member = data.getAsJsonArray("members").get(0).getAsJsonObject();
+        assertTrue(member.get("present").getAsBoolean());
+        assertTrue(member.get("rank").isJsonNull());
     }
 }

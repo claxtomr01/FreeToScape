@@ -24,6 +24,8 @@ The plugin contacts public Wise Old Man endpoints and the configured feed. These
 
 Officer reporting is **off by default**. Enabling it sends only officer-linked RuneScape names, clan ranks and observed presence in the reporter's own clan channel to the configured authenticated receiver. Channel absence is not proof that a player is globally offline. Worlds, locations, inventory, game chat and game-login credentials are not reported.
 
+Automatic rank sync excludes **Warden and every higher in-game rank**. The reporter resolves Warden's position from the clan's configured titles and withholds the rank for members at or above that position; their approved presence tracking continues. A withheld rank cannot trigger Discord role additions or removals. If Warden's position cannot be resolved, all automatic rank reporting is withheld until it can be resolved. Other Discord roles remain under manual control.
+
 The companion bot retains activity for seven days and account links until an officer unlinks them. Discord IDs remain on the bot and are not needed by the game plugin. Server access/logging/backups and retention are the operator's responsibility. This optional feature processes account identifiers; it must not be described as storing no personal data across the whole system.
 
 The reporter uses a dedicated `CLAN_SYNC_REPORTER_TOKEN` environment variable of at least 32 characters, supplied to the RuneLite process by the authorised operator, plus the configured clan-sync base URL. Never put the bot token, Google credentials or reporter token in this repository or in a feed URL. The ordinary client does not inherit credentials from a development launcher. Use only a trusted receiver and keep reporting disabled on ordinary members' clients.
