@@ -1,0 +1,22 @@
+plugins { id 'java' }
+repositories {
+    maven { url = 'https://repo.runelite.net' }
+    mavenCentral()
+}
+def runeLiteVersion = '1.13.6'
+version = '0.1.0'
+dependencies {
+    compileOnly "net.runelite:client:${runeLiteVersion}"
+    testImplementation "net.runelite:client:${runeLiteVersion}"
+    testImplementation 'junit:junit:4.13.2'
+}
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release.set(11)
+}
+tasks.register('run', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'com.freetoscape.FreeToScapeLauncher'
+    enableAssertions = true
+    args '--developer-mode'
+}
