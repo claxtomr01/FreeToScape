@@ -1,0 +1,6 @@
+discord.py>=2.4,<3
+python-dotenv>=1.0,<2
+google-auth[requests]>=2.35,<3
+requests>=2.32,<3
+tzdata>=2025.1
+aiohttp>=3.10,<4
