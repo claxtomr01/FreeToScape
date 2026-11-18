@@ -8,11 +8,12 @@ if ((Get-FileHash -LiteralPath (Join-Path $target 'bot.py') -Algorithm SHA256).H
 }
 $backup = Join-Path $target ('runelite-integration-backup-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Path $backup | Out-Null
-foreach ($name in @('bot.py', 'runelite_feed.py', '.env')) {
+foreach ($name in @('bot.py', 'runelite_feed.py', 'clan_highlights.py', '.env')) {
     $source = Join-Path $target $name
     if (Test-Path -LiteralPath $source) { Copy-Item -LiteralPath $source -Destination (Join-Path $backup $name) }
 }
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'runelite_feed.py') -Destination (Join-Path $target 'runelite_feed.py')
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'clan_highlights.py') -Destination (Join-Path $target 'clan_highlights.py')
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'bot.py') -Destination (Join-Path $target 'bot.py')
 $envPath = Join-Path $target '.env'
 $settings = if (Test-Path -LiteralPath $envPath) { [IO.File]::ReadAllText($envPath) } else { '' }

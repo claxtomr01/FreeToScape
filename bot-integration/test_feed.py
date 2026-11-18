@@ -47,7 +47,7 @@ class FeedTests(unittest.TestCase):
             restored = Feed(root)
             restored.record(123)
             self.assertEqual(restored.snapshot()['events'], [{'id': '123', 'text': NOTICE}])
-            self.assertEqual(set(restored.snapshot()), {'events', 'teams', 'scoresUpdatedAt', 'scoresStale'})
+            self.assertEqual(set(restored.snapshot()), {'events', 'teams', 'scoresUpdatedAt', 'scoresStale', 'highlights', 'highlightsStale'})
 
     def test_bounded_history(self):
         with tempfile.TemporaryDirectory() as root:

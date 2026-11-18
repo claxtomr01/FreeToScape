@@ -7,6 +7,7 @@ import re
 import time
 from pathlib import Path
 from aiohttp import web
+from clan_highlights import HighlightStore, install_highlights
 
 NOTICE = 'a new bounty has been posted'
 
@@ -36,6 +37,7 @@ def is_new_bounty(message, bot):
 
 class Feed:
     def __init__(self, root):
+        self.highlights = HighlightStore(root)
         self.path = Path(root) / 'runelite-feed-state.json'
         self.events = []
         if self.path.exists():
@@ -60,7 +62,8 @@ class Feed:
     def snapshot(self):
         return {'events': list(self.events), 'teams': self.scores,
                 'scoresUpdatedAt': self.score_updated_at,
-                'scoresStale': self.score_error}
+                'scoresStale': self.score_error,
+                'highlights': list(self.highlights.items), 'highlightsStale': self.highlights.stale}
 
 
 def install(bot, root, read_scores):
@@ -68,6 +71,7 @@ def install(bot, root, read_scores):
     if os.getenv('RUNELITE_FEED_ENABLED', '').lower() != 'true':
         return
     feed = Feed(root)
+    install_highlights(bot, feed.highlights)
     runner = None
     score_task = None
     original_setup = bot.setup_hook

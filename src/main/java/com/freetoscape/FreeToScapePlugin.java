@@ -35,7 +35,7 @@ public class FreeToScapePlugin extends Plugin {
     @Inject private ConfigManager configManager;
     private ScheduledExecutorService worker;
     private NavigationButton navigation;
-    private JTextArea home, slaughterhouse, eventOverview;
+    private JTextArea home, slaughterhouse, eventOverview, highlights;
     private JTextArea activityStatus;
     private LeaderboardPane sotw, botw, eventDetails;
     private JComboBox<EventChoice> eventPicker;
@@ -91,6 +91,16 @@ public class FreeToScapePlugin extends Plugin {
         botw = leaderboardPage(tabs, "BOTW");
         eventConnection = statusArea(); feedConnection = statusArea();
         slaughterhouse = pageWithStatus(tabs, "Slaughterhouse", feedConnection);
+        highlights = new JTextArea(22,19);
+        highlights.setEditable(false); highlights.setLineWrap(true); highlights.setWrapStyleWord(true);
+        highlights.setMargin(new Insets(10,8,10,8));
+        highlights.setText("Loading recent clan highlights...");
+        JPanel highlightPanel = new JPanel(new BorderLayout(0,6));
+        highlightPanel.add(new JScrollPane(highlights), BorderLayout.CENTER);
+        JButton openHighlights = new JButton("Open highlights in Discord");
+        openHighlights.addActionListener(e -> LinkBrowser.browse("https://discord.com/channels/1236133761859584010/1255348400019214447"));
+        highlightPanel.add(openHighlights, BorderLayout.SOUTH);
+        tabs.addTab("Highlights", highlightPanel);
         home.setText("Welcome to FreeToScape!\n\nYour clan companion for RuneLite.\n\nEvents\nDiscover active and upcoming clan competitions and view their standings.\n\nSOTW & BOTW\nFollow Skill of the Week XP gains and Boss of the Week kill counts.\n\nUse the buttons below to visit Wise Old Man or join the clan Discord.");
         JPanel eventsPanel = new JPanel(new BorderLayout(0, 6));
         eventPicker = new JComboBox<>();
@@ -138,6 +148,7 @@ public class FreeToScapePlugin extends Plugin {
         activityPanel.add(officerButtons, BorderLayout.SOUTH);
         tabs.addTab("Clan activity", activityPanel);
         privacy.append("\n\nOfficer setup accepts a dedicated reporter credential in a masked field. It is held only in process memory, bound to the selected receiver, and cleared on plugin shutdown or Forget session credential. It is not saved in RuneLite configuration. Changing receiver requires setting up its credential again. The officer launcher remains an optional environment-variable fallback.");
+        privacy.append("\n\nClan Highlights displays the latest ten screenshot or labelled achievement/drop posts from the operator-selected Discord channel. Captions, poster display names, message IDs and times are saved by the bot until replaced by newer posts or removed at the source. Images are not downloaded or rehosted. This highlights list is separate from seven-day officer activity history.");
         panel.add(tabs, BorderLayout.CENTER);
         JPanel links = new JPanel(new GridLayout(0, 1, 0, 4));
         JButton wom = new JButton("Wise Old Man");
@@ -336,11 +347,12 @@ public class FreeToScapePlugin extends Plugin {
         } else if (discoveryFailed) show(eventOverview, "Events unavailable. Retrying automatically.", token);
         String url = config.feedUrl().trim();
         if (!url.equals(statusFeedUrl)) { statusFeedUrl = url; feedStatus.reset(); }
-        if (url.isEmpty()) { feedStatus.notConfigured(); passwordOverlay.clear(); show(slaughterhouse, "Clan feed is not configured yet.", token); return; }
+        if (url.isEmpty()) { feedStatus.notConfigured(); passwordOverlay.clear(); show(slaughterhouse, "Clan feed is not configured yet.", token); show(highlights, "Configure the clan feed to load recent highlights.", token); return; }
         try {
             validateFeedUrl(url);
             JsonObject feed = get(url);
             if (session != token) return;
+            show(highlights, ClanHighlights.format(feed), token);
             passwordOverlay.update(feed);
             StringBuilder scores = new StringBuilder("Slaughterhouse\n\n");
             if (feed.has("teams") && feed.get("teams").isJsonArray()) {
@@ -372,6 +384,7 @@ public class FreeToScapePlugin extends Plugin {
             String help = connectionHelp(e, true, url);
             feedStatus.unavailable(help);
             stale(slaughterhouse, help, token);
+            stale(highlights, help, token);
         }
     }
 

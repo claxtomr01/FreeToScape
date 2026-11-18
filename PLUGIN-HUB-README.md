@@ -6,6 +6,7 @@ A RuneLite sidebar for FreeToScape clan events, Wise Old Man standings and Slaug
 - SOTW: Skill of the Week XP standings.
 - BOTW: Boss of the Week kill-count standings.
 - Slaughterhouse: team totals from a separately operated clan feed.
+- Highlights: the latest ten screenshot or labelled achievement/drop posts, retained by the bot across restarts. Ordinary replies are skipped. An Open highlights in Discord button opens the original channel.
 - Bounty notices: a local game-chat message saying `[Clan Broadcast] A new bounty has been posted!`, with the `[Clan Broadcast]` prefix in red.
 - Optional bounty-password overlay, off by default, when the configured feed supplies the current event code.
 - Optional officer activity reporter, off by default, for approved account links and Discord rank-sync dry runs.
@@ -27,6 +28,8 @@ Officer reporting is **off by default**. Enabling it sends only officer-linked R
 Automatic rank sync excludes **Warden and every higher in-game rank**. The reporter resolves Warden's position from the clan's configured titles and withholds the rank for members at or above that position; their approved presence tracking continues. A withheld rank cannot trigger Discord role additions or removals. If Warden's position cannot be resolved, all automatic rank reporting is withheld until it can be resolved. Other Discord roles remain under manual control.
 
 The companion bot retains activity for seven days and account links until an officer unlinks them. Discord IDs remain on the bot and are not needed by the game plugin. Server access/logging/backups and retention are the operator's responsibility. This optional feature processes account identifiers; it must not be described as storing no personal data across the whole system.
+
+Highlights are a separate voluntary-post source: set `CLAN_HIGHLIGHTS_CHANNEL_ID` in the bot environment. Screenshot posts and text beginning `Achievement:`, `Drop:`, `Pet:` or `Milestone:` qualify. Captions, poster display names, message IDs and posting times are stored in `clan-highlights-state.json`, bounded to the latest ten, until replaced or removed at the source. No attachment URLs, images or ordinary chat replies are stored. The source's latest 100 messages are checked on reconnect to seed the list; up to ten matching posts are shown. Message edits/deletions trigger a refresh. Saved entries remain visible with a warning during a source outage. Operators must approve sharing this channel's highlights with everyone who can access the feed. A persistent list remains in the bot, rather than in player files on the client.
 
 ## Officer setup
 

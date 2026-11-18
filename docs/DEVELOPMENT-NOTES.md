@@ -1,5 +1,7 @@
 # FreeToScape RuneLite plugin
 
+Clan Highlights (18 November 2026): the Highlights tab displays the latest ten screenshot/labelled achievement or drop posts from Discord channel `1255348400019214447`. The bot persists the bounded list across restarts, skips ordinary replies and retains saved entries during source outages. A live test post reached the feed, survived store reload and was then removed; ten real entries remain. See HIGHLIGHTS-TEST-2026-11-18.md. No screenshots are downloaded or rehosted, and this does not change bounty-password access.
+
 Officer setup now lives in **Clan activity → Officer setup**: a masked credential field supplies the dedicated reporter credential for this plugin session without saving it in RuneLite settings. The tab shows the destination bot and how to view retained activity. See [PLUGIN-HUB-README.md](../PLUGIN-HUB-README.md) for current public setup instructions. Secure storage across restarts and remote HTTPS hosting remain future work.
 
 Plugin Hub preparation (11 November 2026): see [PLUGIN-HUB-SUBMISSION.md](../PLUGIN-HUB-SUBMISSION.md). The source now uses injected Gson, declares the standard Hub build, and carries the BSD 2-Clause licence. Run `prepare-plugin-hub.ps1` to export public plugin source with the public-facing README; this excludes the local bot and private runtime data. The live test remains paused and no publication or official approval is claimed.
